@@ -1,0 +1,78 @@
+---
+
+- name: install buster-backports repo
+  apt_repository:
+    repo: deb http://deb.debian.org/debian buster-backports main
+    state: present
+    update_cache: yes
+  when: ansible_distribution_release == "buster"
+
+
+- name: install wireguard packages
+  apt:
+    pkg:
+      - wireguard
+      - qrencode
+    state: present
+    update_cache: yes
+  when: ansible_os_family == "Debian"
+
+- name: ensure wireguard conf dir
+  tags: [ show_wg_client_conf ]
+  file:
+    path: "{{ wg_conf_path }}"
+    state: directory
+  register: wg_conf_dir
+
+- name: Update SystemCtl Settings
+  sysctl:
+    name: net.ipv4.ip_forward
+    value: '1'
+    state: present
+    reload: yes
+  when: ansible_os_family == "Debian"
+
+- name: ensure wireguard port through firewall open
+  ufw: 
+    rule: allow
+    port: 51820
+    proto: udp
+  when: ansible_os_family == "Debian"
+
+- name: Check Server Keys
+  shell: /bin/true
+  notify:
+    - check server privkey
+    - check server pubkey
+
+- name: flush handlers
+  meta: flush_handlers
+
+- name: create server keys
+  ansible.builtin.shell:
+    chdir: "{{ wg_conf_dir.path }}"
+    cmd: umask 077 && wg genkey | tee server_privkey | wg pubkey > server_pubkey
+  when: not server_privkey_file.stat.exists or server_pubkey_file.stat.exists
+  notify:
+    - check server privkey
+    - check server pubkey
+
+- name: flush handlers
+  meta: flush_handlers
+
+- name: get server pubkey
+  ansible.builtin.slurp:
+    src: "{{ wg_conf_dir.path }}/server_pubkey"
+  register: server_pubkey
+
+- name: get server privkey
+  ansible.builtin.slurp:
+    src: "{{ wg_conf_dir.path }}/server_privkey"
+  register: server_privkey
+
+- name: get server public IPv4 address
+  uri: 
+    url: "https://ipv4.icanhazip.com"
+    remote_src: yes
+    return_content: yes
+  register: server_public_ipv4

@@ -1,0 +1,6 @@
+---
+- name: start wg0 server
+  systemd:
+    name: "wg-quick@wg0"
+    state: started
+    enabled: yes

@@ -1,0 +1,62 @@
+---
+- name: create client config direcory
+  file:
+    path: "{{ wg_conf_dir.path }}/{{ item.name }}"
+    state: directory
+  loop: "{{ wg_clients }}"
+  when: item.remove is undefined or item.remove != True
+
+- name: remove client config direcory
+  file:
+    path: "{{ wg_conf_dir.path }}/{{ item.name }}"
+    state: absent
+  loop: "{{ wg_clients }}"
+  when: item.remove is defined and item.remove == True
+
+- name: generate wg client keys
+  ansible.builtin.shell:
+    chdir: "{{ wg_conf_dir.path}}/{{ item.name }}"
+    cmd: |
+      if [ ! -f privatekey ]
+        then
+          wg genkey | tee privatekey | wg pubkey > publickey
+      fi
+      exit 0
+  when: item.remove is undefined or item.remove != True
+  loop: "{{ wg_clients }}"
+
+- name: fetch client public key
+  ansible.builtin.slurp:
+    src: "{{ wg_conf_dir.path}}/{{ item.name }}/publickey"
+  loop: "{{ wg_clients }}"
+  register: wg_clients_publickeys
+  when: item.remove is undefined or item.remove != True
+
+- name: fetch client private key
+  ansible.builtin.slurp:
+    src: "{{ wg_conf_dir.path}}/{{ item.name }}/privatekey"
+  loop: "{{ wg_clients }}"
+  register: wg_clients_privatekeys
+  when: item.remove is undefined or item.remove != True
+
+#- debug:
+    #msg: "{{ wg_clients_publickeys }}"
+#- debug:
+     #msg: "{{ wg_clients_privatekeys }}"
+
+- name: generate client config
+  template:
+    src: "wg0-client.conf.j2"
+    dest: "{{ wg_conf_dir.path}}/{{ item.item.name }}/wg0.conf"
+  loop: "{{ wg_clients_privatekeys.results }}"
+  when: item.item.remove is undefined or item.item.remove != True
+
+- name: generate server config with clients
+  template:
+    src: wg0-server.conf.j2
+    dest: "{{ wg_conf_dir.path }}/wg0.conf"
+    mode: 0640
+  #loop: "{{ wg_clients_publickeys.results }}"
+  #when: item.item.remove is undefined or item.item.remove != True
+  notify: restart wg0
+

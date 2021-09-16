@@ -1,0 +1,6 @@
+---
+
+ - { include: setup.yml, become: yes } 
+ - { include: users.yml, become: yes } 
+ - { include: user_config_viewer.yml, become: yes, when: wg_client is defined }
+ - { include: startup.yml, become: yes }

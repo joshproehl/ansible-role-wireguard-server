@@ -1,0 +1,12 @@
+[Interface]
+Address = {{ item.item.wg_ip }}/24
+PrivateKey = {{ item['content'] | b64decode | replace('\n', '')}}
+{% if item.item.wg_dns_enabled is defined %}
+DNS = {{ wg_subnet.server_ip }}
+{% endif %}
+
+[Peer]
+PublicKey = {{ server_pubkey['content'] | b64decode | replace('\n', '')}}
+Endpoint = {{ server_public_ipv4['content'] | replace('\n', '')}}:{{ wg_port }}
+AllowedIPs = {{ item.item.wg_allowed_ips | default('0.0.0.0/0') }}
+PersistentKeepalive = 25

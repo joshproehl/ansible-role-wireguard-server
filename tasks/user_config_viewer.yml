@@ -1,0 +1,60 @@
+---
+# Run with: 
+# ansible-playbook main.yml --tags show_wg_client_conf -e wg_client=clientname
+# add "-e show_as_qr=true" to show it as a QR code ready to scan
+
+- name: register client config
+  tags: [ never, show_wg_client_conf ]
+  ansible.builtin.slurp:
+    src: "{{ wg_conf_dir.path }}/{{ wg_client }}/wg0.conf"
+  register: wg_client_config
+  when: show_as_qr is undefined or show_as_qr != 'true'
+
+- name: capture config for printing
+  tags: [ never, show_wg_client_conf ]
+  become: no
+  local_action:
+    module: shell
+    cmd: echo "{{ wg_client_config['content'] | b64decode }}"
+  register: wg_client_config_result
+  when: show_as_qr is undefined or show_as_qr != 'true'
+
+- name: show client config
+  tags: [ never, show_wg_client_conf ]
+  become: no
+  pause:
+    seconds: 1
+    prompt: |
+
+      profile-name.conf for {{ wg_client }}: 
+      ------------------------------------
+
+      {{ wg_client_config_result.stdout }}
+
+      ------------------------------------
+      add `-e show_as_qr=true` to show as QR code
+
+  when: show_as_qr is undefined or show_as_qr != 'true'
+
+
+- name: register client QR code
+  tags: [ never, show_wg_client_conf ]
+  ansible.builtin.shell:
+    cmd: "qrencode -t ansiutf8 < {{ wg_conf_dir.path}}/{{ wg_client }}/wg0.conf"
+  register: wg_client_qrcode
+  when: show_as_qr is defined and show_as_qr == 'true'
+
+- name: show client QR code
+  tags: [ never, show_wg_client_conf ]
+  pause:
+    seconds: 1
+    prompt: |
+
+      QR code conf for {{ wg_client }} config:
+      ------------------------------------
+
+      {{ wg_client_qrcode.stdout }}
+       
+      ------------------------------------
+      
+  when: show_as_qr is defined and show_as_qr == 'true'

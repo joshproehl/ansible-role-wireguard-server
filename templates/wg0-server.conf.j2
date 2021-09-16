@@ -1,0 +1,16 @@
+# {{ ansible_managed }}
+[Interface]
+Address = {{ wg_subnet.server_ip }}{{ wg_subnet.cidr }}
+ListenPort = {{ wg_port }}
+PrivateKey = {{ server_privkey['content'] | b64decode }}
+PostUp = iptables -A FORWARD -i wg0 -j ACCEPT; iptables -t nat -A POSTROUTING -o {{ ansible_default_ipv4.interface }} -j MASQUERADE
+PostDown = iptables -D FORWARD -i wg0 -j ACCEPT; iptables -t nat -D POSTROUTING -o {{ ansible_default_ipv4.interface }} -j MASQUERADE
+
+{% for item in wg_clients_publickeys.results %}
+{% if item.item.remove is undefined or item.item.remove != True %}
+[Peer]
+PublicKey = {{ item['content'] | b64decode | replace('\n', '') }}
+AllowedIps = {{ item.item.wg_ip }}/32
+
+{% endif %}
+{% endfor %}

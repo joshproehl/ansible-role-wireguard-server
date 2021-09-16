@@ -1,0 +1,26 @@
+---
+
+- name: check if private key exists
+  ansible.builtin.stat: 
+    path: /etc/wireguard/server_privkey
+  register: server_privkey_file
+  listen: "check server privkey"
+
+- name: check if public key exists
+  ansible.builtin.stat: 
+    path: /etc/wireguard/server_pubkey
+  register: server_pubkey_file
+  listen: "check server pubkey"
+
+- name: start wg0
+  systemd:
+    name: "wg-quick@wg0"
+    state: started
+    enabled: yes
+    daemon_reload: yes
+
+- name: restart wg0
+  systemd:
+    name: "wg-quick@wg0"
+    state: restarted
+    daemon_reload: yes
