@@ -8,5 +8,5 @@ DNS = {{ wg_subnet.server_ip }}
 [Peer]
 PublicKey = {{ server_pubkey['content'] | b64decode | replace('\n', '')}}
 Endpoint = {{ server_public_ipv4['content'] | replace('\n', '')}}:{{ wg_port }}
-AllowedIPs = {{ item.item.wg_allowed_ips | default('0.0.0.0/0') }}
 PersistentKeepalive = 25
+AllowedIPs = {{ wg_subnet.server_ip }}/32, {% if wg_subnet.allow_client_communication %}, {{ wg_subnet.server_ip }}{{ wg_subnet.cidr }}{% endif %}{% if item.item.allowed_ips is defined %}, {{ item.item.wg_allowed_ips | join(", ") }}{% endif %}{% if item.item.send_all_traffic %}, 0.0.0.0/0{% endif %}
