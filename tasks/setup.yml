@@ -35,7 +35,7 @@
 - name: ensure wireguard port through firewall open
   ufw: 
     rule: allow
-    port: 51820
+    port: "{{ wg_port }}"
     proto: udp
   when: ansible_os_family == "Debian"
 
