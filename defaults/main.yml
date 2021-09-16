@@ -1,2 +1,6 @@
 wg_conf_path: "/etc/wireguard"
 wg_port: "51820"
+wg_subnet:
+  server_ip: 192.168.119.1
+  cidr: "/24"
+  allow_client_communication: false
