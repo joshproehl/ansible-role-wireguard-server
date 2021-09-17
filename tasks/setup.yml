@@ -35,7 +35,7 @@
 - name: ensure wireguard port through firewall open
   ufw: 
     rule: allow
-    port: "{{ wg_port }}"
+    port: "{{ wg_subnet.wg_port }}"
     proto: udp
   when: ansible_os_family == "Debian"
 
@@ -43,13 +43,13 @@
   # IPTABLES routing rules GO HERE
   debug:
     msg: "Not Implemented Yet!"
-  when: wg_subnet.allow_client_comumnication == False
+  when: wg_subnet.allow_client_communication is defined and wg_subnet.allow_client_comumnication == False
 
 - name: ensure clients can communicate
   # MAKE SURE NO BLOCKING IPTABLES RULES STILL EXIST
   debug:
     msg: "Not Implemented Yet!"
-  when: wg_subnet.allow_client_communication == True
+  when: wg_subnet.allow_client_communication is defined and wg_subnet.allow_client_communication == True
 
 - name: Check Server Keys
   shell: /bin/true
