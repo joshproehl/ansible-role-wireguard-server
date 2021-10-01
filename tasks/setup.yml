@@ -7,12 +7,12 @@
     update_cache: yes
   when: ansible_distribution_release == "buster"
 
-
-- name: install wireguard packages
+- name: install required packages
   apt:
     pkg:
       - wireguard
       - qrencode
+      - netfilter-persistent # Debian >10 uses netfilter with the iptables-nf translation layer
     state: present
     update_cache: yes
   when: ansible_os_family == "Debian"
@@ -32,24 +32,14 @@
     reload: yes
   when: ansible_os_family == "Debian"
 
-- name: ensure wireguard port through firewall open
-  ufw: 
-    rule: allow
-    port: "{{ wg_subnet.wg_port }}"
-    proto: udp
+- name: ensure wireguard port open on iptables
+  ansible.builtin.iptables:
+    action: append
+    chain: INPUT
+    destination_port: "{{ wg_port }}"
+    protocol: udp
+    jump: ACCEPT
   when: ansible_os_family == "Debian"
-
-- name: block traffic between clients
-  # IPTABLES routing rules GO HERE
-  debug:
-    msg: "Not Implemented Yet!"
-  when: wg_subnet.allow_client_communication is defined and wg_subnet.allow_client_comumnication == False
-
-- name: ensure clients can communicate
-  # MAKE SURE NO BLOCKING IPTABLES RULES STILL EXIST
-  debug:
-    msg: "Not Implemented Yet!"
-  when: wg_subnet.allow_client_communication is defined and wg_subnet.allow_client_communication == True
 
 - name: create server keys
   ansible.builtin.shell:

@@ -7,9 +7,9 @@ DNS = {{ wg_subnet.server_ip }}
 
 [Peer]
 PublicKey = {{ server_pubkey['content'] | b64decode | replace('\n', '')}}
-Endpoint = {% if wg_subnet.server_dns is defined %}{{ wg_subnet.server_dns }}{% else %}{{ server_public_ipv4['content'] | replace('\n', '')}}{% endif %}:{{ wg_subnet.wg_port }}
-AllowedIPs = {{ wg_subnet.server_ip }}/32{% if wg_subnet.allow_client_communication is defined and wg_subnet.allow_client_communication != False %}, {{ wg_subnet.server_ip }}{{ wg_subnet.cidr }}{% endif %}{% if item.item.allowed_ips is defined %}, {{ item.item.allowed_ips | join(", ") }}{% endif %}{% if item.item.send_all_traffic is defined and item.item.send_all_traffic != False %}, 0.0.0.0/0{% endif %}
+Endpoint = {{ server_public_ipv4['content'] | replace('\n', '')}}:{{ wg_port }}
+AllowedIPs = {{ wg_subnet.server_ip }}/32{% if item.item.block_client_communication is defined and item.item.block_client_communication == False %}, {{ wg_subnet.network }}{{ wg_subnet.cidr }}{% endif %}{% if item.item.allowed_ips is defined %}, {{ item.item.wg_allowed_ips | join(", ") }}{% endif %}{% if item.item.send_all_traffic is undefined or item.item.send_all_traffic != False %}, 0.0.0.0/0{% endif %}
 
-{% if item.item.persistent_keepalive is undefined or item.item.persistent_keepalive != false %}
-PersistentKeepalive = {{ item.item.persistent_keepalive | default('25') }}
+{% if item.item.persistent_keepalive is defined and item.item.persistent_keepalive != false and item.item.persistent_keepalive != 0 %}
+PersistentKeepalive = {{ item.item.persistent_keepalive }}
 {% endif %}

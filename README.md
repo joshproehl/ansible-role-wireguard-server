@@ -3,10 +3,13 @@
 Sets up a wireguard server and creates configs for the specified clients,
 and gives you an easy way to fetch/display those configs.
 
-Currently designed to run on a Debian10 server, other OS' may not behave properly.
-Requires root access.
+This is primarily designed as a road-warrior style VPN server, so although
+Wireguard can be peer to peer, this playbook sets things up as a
+hub-and-spoke system with the server as the hub.
 
-This is primarily designed as a road-warrior style VPN server.
+Currently designed to run on a Debian10 server, other OS' may not behave
+properly. Requires root access.
+
 
 
 ## Usage
@@ -31,20 +34,24 @@ Here's an example of what you can add to your playbook to create the wireguard s
       tags: [ show_wg_client_conf ]             # This tag must exist in order to call the tag from the role
       vars:
         - wg_subnet:
-            server_ip: 10.119.81.1
+            network: 10.3.2.0
             cidr: "/24"
-            allow_client_communication: false   # Optional, defaults to true. If false will create routing rules to prevent client communication
+            server_ip: 10.3.2.1
             wg_conf_path: "/my/conf/path"       # Optional, defaults to /etc/wireguard
         - wg_clients:
           - name: client1
-            wg_ip: 10.119.81.2
-            wg_dns_enabled: true                # Optional, defaults to false
-            allowed_ips:
+            wg_ip: 10.3.2.2
+            allowed_ips:                        # Optional list of IP addresses to route to the server
               - 10.0.0.1/24
-              - 192.168.1.1/32
-            send_all_traffic: true              # Optional, defaults to false. Set to true to create a config which routes all trafic on the client through the server
+            send_all_traffic: true              # Optional, defaults to true. If false will only route the ips listed under allowed_ips to server
             remove: true                        # Optional, defaults to false. If set to true will remove this client from the server, after which you can remove it from the playbook.
-            persistent_keepalive: 50            # Optional, defaults to 25. Set to false to remove persistent_keepalive entirely from the generated config
+            persistent_keepalive: 50            # Optional, defaults to not being added to config. Any value other than false/0 is added to the config.
+            iptables_forward_ports:             # Optional list of ports which will be forwarded to this client. No effort is made to prevent configuration errors, in the case of multiple clients requesting the same port the last one handled will win.
+              - from: 54321                           # Required, the port on the server to forward
+                to: 54321                             # Required, the port to forward to on the client
+                proto: tcp                            # Required, must be a valid protocol/match value. (tcp/udp)
+                comment: Forward Service to client1   # Optional, defaults to "WGFWD-client_name: ", followed by the given comment if provided.
+            block_client_communication: false   # Optional, defaults to false. Creates an iptables rule block traffic from this client to the rest of the WG subnet.
             
 ```
 

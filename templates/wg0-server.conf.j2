@@ -11,6 +11,9 @@ PostDown = iptables -D FORWARD -i wg0 -j ACCEPT; iptables -t nat -D POSTROUTING 
 [Peer]
 PublicKey = {{ item['content'] | b64decode | replace('\n', '') }}
 AllowedIps = {{ item.item.wg_ip }}/32
+{% if item.item.persistent_keepalive is defined and item.item.persistent_keepalive != false and item.item.persistent_keepalive != 0 %}
+PersistentKeepalive = {{ item.item.persistent_keepalive }}
+{% endif %}
 
 {% endif %}
 {% endfor %}
