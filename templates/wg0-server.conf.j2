@@ -1,7 +1,7 @@
 # {{ ansible_managed }}
 [Interface]
 Address = {{ wg_subnet.server_ip }}{{ wg_subnet.cidr }}
-ListenPort = {{ wg_subnet.wg_port }}
+ListenPort = {{ wg_port }}
 PrivateKey = {{ server_privkey['content'] | b64decode }}
 PostUp = iptables -A FORWARD -i wg0 -j ACCEPT; iptables -t nat -A POSTROUTING -o {{ ansible_default_ipv4.interface }} -j MASQUERADE
 PostDown = iptables -D FORWARD -i wg0 -j ACCEPT; iptables -t nat -D POSTROUTING -o {{ ansible_default_ipv4.interface }} -j MASQUERADE
