@@ -1,9 +1,7 @@
 [Interface]
 Address = {{ item.item.wg_ip }}/32
 PrivateKey = {{ item['content'] | b64decode | replace('\n', '')}}
-{% if item.item.wg_dns_enabled is defined %}
 DNS = {{ wg_subnet.server_ip }}
-{% endif %}
 
 [Peer]
 PublicKey = {{ server_pubkey['content'] | b64decode | replace('\n', '')}}

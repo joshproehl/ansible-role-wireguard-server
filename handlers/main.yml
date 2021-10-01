@@ -24,3 +24,9 @@
     name: "wg-quick@wg0"
     state: restarted
     daemon_reload: yes
+
+- name: restart unbound
+  systemd:
+    name: "unbound"
+    state: restarted
+    daemon_reload: yes

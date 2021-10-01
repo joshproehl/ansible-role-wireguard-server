@@ -7,6 +7,9 @@ This is primarily designed as a road-warrior style VPN server, so although
 Wireguard can be peer to peer, this playbook sets things up as a
 hub-and-spoke system with the server as the hub.
 
+Sets up an Unbound DNS resolver on the server and points all clients to that
+as their DNS.
+
 Currently designed to run on a Debian10 server, other OS' may not behave
 properly. Requires root access.
 

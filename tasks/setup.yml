@@ -13,6 +13,7 @@
       - wireguard
       - qrencode
       - netfilter-persistent # Debian >10 uses netfilter with the iptables-nf translation layer
+      - unbound
     state: present
     update_cache: yes
   when: ansible_os_family == "Debian"
@@ -67,3 +68,15 @@
     remote_src: yes
     return_content: yes
   register: server_public_ipv4
+
+- name: template Unbound config
+  template:
+    src: "unbound.conf"
+    dest: "/etc/unbound/unbound.conf.d/road-warrior-server.conf"
+  notify: restart unbound
+
+- name: ensure Unbound running
+  systemd:
+    name: "unbound"
+    state: started
+    enabled: yes
