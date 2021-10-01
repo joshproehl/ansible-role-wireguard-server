@@ -17,13 +17,13 @@
   ansible.builtin.shell:
     chdir: "{{ wg_conf_dir.path}}/{{ item.name }}"
     cmd: |
-      if [ ! -f privatekey ]
-        then
-          wg genkey | tee privatekey | wg pubkey > publickey
+      if [ ! -f privatekey ] || [ ! -f publickey ]; then
+        wg genkey | tee privatekey | wg pubkey > publickey
+        echo "GENERATED NEW KEYS FOR CLIENT: {{ item.name }}"
       fi
-      exit 0
   when: item.remove is undefined or item.remove != True
   loop: "{{ wg_clients }}"
+  # TODO: Capture if these have been regenerated and ensure that gets alerted. (This client will no longer work if keys are regenerated)
 
 - name: fetch client public key
   ansible.builtin.slurp:

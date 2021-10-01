@@ -51,26 +51,15 @@
     msg: "Not Implemented Yet!"
   when: wg_subnet.allow_client_communication is defined and wg_subnet.allow_client_communication == True
 
-- name: Check Server Keys
-  shell: /bin/true
-  notify:
-    - check server privkey
-    - check server pubkey
-
-- name: flush handlers
-  meta: flush_handlers
-
 - name: create server keys
   ansible.builtin.shell:
     chdir: "{{ wg_conf_dir.path }}"
-    cmd: umask 077 && wg genkey | tee server_privkey | wg pubkey > server_pubkey
-  when: not server_privkey_file.stat.exists or server_pubkey_file.stat.exists
-  notify:
-    - check server privkey
-    - check server pubkey
-
-- name: flush handlers
-  meta: flush_handlers
+    cmd: |
+      if [ ! -f server_privkey ] || [ ! -f server_pubkey ]; then
+        umask 077 && wg genkey | tee server_privkey | wg pubkey > server_pubkey
+        echo "GENERATED NEW SERVER KEYS"
+      fi
+  # TODO: Capture if these have been regenerated and ensure that gets alerted. (Clients won't work anymore!)
 
 - name: get server pubkey
   ansible.builtin.slurp:
