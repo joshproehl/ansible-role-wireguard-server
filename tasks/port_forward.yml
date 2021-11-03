@@ -1,0 +1,43 @@
+---
+#  For Server's VPN IP (10.10.0.1) to client IP (10.10.0.2), per https://lewiswalsh.com/port-forwarding-with-iptables-for-wireguard/
+# iptables -A FORWARD -i eth0 -o wg0 -p tcp --syn --dport 27256 -m conntrack --ctstate NEW -j ACCEPT
+# iptables -t nat -A PREROUTING -i eth0 -p tcp --dport 27256 -j DNAT --to-destination 10.10.0.2
+# iptables -t nat -A POSTROUTING -o wg0 -p tcp --dport 27256 -d 10.10.0.2 -j SNAT --to-source 10.10.0.1
+
+- name: forward requested port
+  ansible.builtin.iptables:
+    #action: append
+    chain: FORWARD
+    in_interface: eth0
+    out_interface: wg0
+    protocol: "{{ item.1.proto }}"
+    syn: "{% if item.1.proto == 'tcp' %}match{% else %}ignore{% endif %}"
+    destination_port: "{{ item.1.from }}"
+    match: [ conntrack ]
+    ctstate: [ NEW ]
+    jump: ACCEPT
+    comment: "WGFWD-{{ item.0.name }}: {{ item.1.comment | default('') }}"
+
+- name: DNAT for requested port
+  ansible.builtin.iptables:
+    table: nat
+    #action: append
+    chain: PREROUTING
+    in_interface: eth0
+    protocol: "{{ item.1.proto }}"
+    destination_port: "{{ item.1.from }}"
+    jump: DNAT
+    to_destination: "{{ item.0.wg_ip }}:{{ item.1.to }}"
+    comment: "WGDNAT-{{ item.0.name }}: {{ item.1.comment | default('') }}"
+
+- name: SNAT for requested port
+  ansible.builtin.iptables:
+    table: nat
+    chain: POSTROUTING
+    out_interface: wg0
+    protocol: "{{ item.1.proto }}"
+    destination_port: "{{ item.1.to }}"
+    destination: "{{ item.0.wg_ip }}"
+    jump: SNAT
+    to_source: "{{ wg_subnet.server_ip }}"
+    comment: "WGSNAT-{{ item.0.name }}: {{ item.1.comment | default('') }}"

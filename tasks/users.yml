@@ -60,51 +60,15 @@
   #when: item.item.remove is undefined or item.item.remove != True
   notify: restart wg0
 
-- name: set up port forwards for clients
+- name: ensure unblocked clients can communicate
   ansible.builtin.iptables:
-    table: nat
-    chain: PREROUTING
-    protocol: "{{ item.1.proto }}"
-    #match: "{{ item.1.proto }}"
-    destination_port: "{{ item.1.from }}"
-    to_destination: "{{ item.0.wg_ip }}:{{ item.1.to }}"
-    jump: DNAT
-    comment: "WGFWD-{{ item.0.name }}: {{ item.1.comment | default('') }}"
-    state: "{% if item.1.remove is defined and item.1.remove == True %}absent{% else %}present{% endif %}"
-  with_subelements:
-    - "{{ wg_clients }}"
-    - iptables_forward_ports
-    - skip_missing: True
-    
-
-- name: iptables rule for communication from client to wg server
-  ansible.builtin.iptables:
-    action: append
     chain: FORWARD
-    destination: "{{ wg_subnet.server_ip }}/32"
     source: "{{ item.wg_ip }}"
-    jump: ACCEPT
-    state: "{% if item.item.remove is defined and item.item.remove == True %}absent{% else %}present{% endif %}"
-  loop: "{{ wg_clients }}"
-
-- name: iptables rule for communication from client to wg server
-  ansible.builtin.iptables:
-    action: append
-    chain: FORWARD
-    destination: "{{ wg_subnet.server_ip }}{{ wg_subnet.cidr }}"
-    source: "{{ item.wg_ip }}"
-    jump: ACCEPT
-    state: "{% if item.block_client_communication is undefined or item.block_client_communication == True %}absent{% else %}present{% endif %}"
-  loop: "{{ wg_clients }}"
-
-
-- name: iptables rule for communication from client to wg_subnet
-  ansible.builtin.iptables:
-    action: append
-    chain: FORWARD
     destination: "{{ wg_subnet.network }}{{ wg_subnet.cidr }}"
-    source: "{{ item.wg_ip }}"
-    ctstate: [ NEW ]
-    jump: REJECT
-    state: "{% if item.block_client_communication is undefined or item.block_client_communication == True %}present{% else %}absent{% endif %}"
+    jump: ACCEPT
   loop: "{{ wg_clients }}"
+  when: item.block_client_communication is defined and item.block_client_communication == False
+
+- name: set up IPTables port forwards for clients
+  include: port_forward.yml #client={{ item }}
+  loop: "{{ wg_clients | subelements('iptables_forward_ports', {'skip_missing': True}) }}"

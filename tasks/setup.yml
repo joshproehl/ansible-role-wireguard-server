@@ -33,12 +33,11 @@
     reload: yes
   when: ansible_os_family == "Debian"
 
-- name: ensure wireguard port open on iptables
-  ansible.builtin.iptables:
-    action: append
+- name: ensure wireguard port through firewall open
+  ansible.builtin.iptables: 
     chain: INPUT
-    destination_port: "{{ wg_port }}"
     protocol: udp
+    destination_port: "{{ wg_port }}"
     jump: ACCEPT
   when: ansible_os_family == "Debian"
 
@@ -62,7 +61,21 @@
     src: "{{ wg_conf_dir.path }}/server_privkey"
   register: server_privkey
 
-- name: get server public IPv4 address
+- name: block traffic between clients by default
+  ansible.builtin.iptables:
+    chain: FORWARD
+    source: "{{ wg_subnet.network }}{{ wg_subnet.cidr }}"
+    destination: "{{ wg_subnet.network }}{{ wg_subnet.cidr }}"
+    jump: DROP
+
+- name: allow traffic from the subnet to the server
+  ansible.builtin.iptables:
+    chain: FORWARD
+    source: "{{ wg_subnet.network }}{{ wg_subnet.cidr }}"
+    destination: "{{ wg_subnet.server_ip }}"
+    jump: ACCEPT
+
+- name: register the server public IPv4 address
   uri: 
     url: "https://ipv4.icanhazip.com"
     remote_src: yes
