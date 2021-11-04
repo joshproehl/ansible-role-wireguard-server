@@ -80,7 +80,13 @@
     url: "https://ipv4.icanhazip.com"
     remote_src: yes
     return_content: yes
-  register: server_public_ipv4
+  register: use_server_public_ipv4
+  when: server_public_ipv4 is undefined
+
+- name: register provided server public IPv4 address
+  set_fact:
+    use_server_public_ipv4: "{'content': '{{ server_public_ipv4 }}'}"
+  when: server_public_ipv4 is defined
 
 - name: template Unbound config
   template:
