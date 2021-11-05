@@ -74,6 +74,7 @@
     source: "{{ wg_subnet.network }}{{ wg_subnet.cidr }}"
     destination: "{{ wg_subnet.server_ip }}"
     jump: ACCEPT
+  when: wg_subnet.block_client_communication is undefined or wg_subnet.block_client_communication != False
 
 - name: register the server public IPv4 address
   uri: 
