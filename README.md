@@ -8,7 +8,8 @@ Wireguard can be peer to peer, this playbook sets things up as a
 hub-and-spoke system with the server as the hub.
 
 Sets up an Unbound DNS resolver on the server and points all clients to that
-as their DNS.
+as their DNS, unless enable_unbound is set to false.
+Unbound is configured to forward to cloudflare/quad9 DNS.
 
 Currently designed to run on a Debian10 server, other OS' may not behave
 properly. Requires root access.
@@ -36,6 +37,7 @@ Here's an example of what you can add to your playbook to create the wireguard s
           become: yes                           # This apply must exist if your remote user isn't root
       tags: [ show_wg_client_conf ]             # This tag *must* exist here in order to call the tag from the role
       vars:
+        - enable_unbound: False                 # Optional, defaults to True
         - server_public_ipv4: 1.1.1.1           # Optional, defaults to the server auto-discovering it's publicly available IPv4 address. If the server has multiple, or is being relayed through a proxy, set this manually.
         - wg_port: 44444                        # Optional, defaults to 51820. 
         - server_dns_name: "wg.server.local"    # Optional, if the server needs to be reached via a DNS rather than it's public IPv4 address set this and the client configs will be generated using this address.

@@ -94,9 +94,24 @@
     src: "unbound.conf"
     dest: "/etc/unbound/unbound.conf.d/road-warrior-server.conf"
   notify: restart unbound
+  when: enable_unbound != False
 
 - name: ensure Unbound running
   systemd:
     name: "unbound"
     state: started
     enabled: yes
+  when: enable_unbound != False
+
+- name: ensure Unbound not running
+  systemd:
+    name: "unbound"
+    state: stopped
+    enabled: no
+  when: enable_unbound == False
+
+- name: remove Unbound config
+  ansible.builtin.file:
+    path: "/etc/unbound/unbound.conf.d/road-warrior-server.conf"
+    state: absent
+  when: enable_unbound == False
