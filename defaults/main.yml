@@ -4,3 +4,5 @@ wg_subnet:
   server_ip: 192.168.119.1
   cidr: "/24"
 enable_unbound: true
+allow_traffic_to_internet: true
+wg_masquerade_not_snat: false

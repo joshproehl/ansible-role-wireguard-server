@@ -41,6 +41,8 @@ Here's an example of what you can add to your playbook to create the wireguard s
         - server_public_ipv4: 1.1.1.1           # Optional, defaults to the server auto-discovering it's publicly available IPv4 address. If the server has multiple, or is being relayed through a proxy, set this manually.
         - wg_port: 44444                        # Optional, defaults to 51820. 
         - server_dns_name: "wg.server.local"    # Optional, if the server needs to be reached via a DNS rather than it's public IPv4 address set this and the client configs will be generated using this address.
+        - allow_traffic_to_internet: True       # Optional, defaults to True. Set to false and the iptables rules allowing traffic forwarding from WG clients to the internet will not be set up.
+        - wg_masquerade_not_snat: False         # Optional. defaults to False. Set to True if you'd like to use MASQUERADE in IPTables rather than SNAT
         - wg_subnet:
             network: 10.3.2.0
             cidr: "/24"

@@ -1,4 +1,18 @@
 ---
+- name: Include specific vars
+  include_vars: "{{ item }}"
+  with_first_found:
+    - "../vars/{{ ansible_os_family }}.yml"
+    - "../vars/empty.yml"
+
+- name: Change facts to use netfilter-persistent on Debian >= 9 or Ubuntu >= 16
+  set_fact:
+    iptables_save_command: "/usr/sbin/netfilter-persistent save"
+    iptables_service: netfilter-persistent
+  when: >-
+    (ansible_distribution == 'Debian' and ansible_distribution_version|int >= 9)
+    or
+    (ansible_distribution == 'Ubuntu' and ansible_lsb.major_release|int >= 16)
 
 - name: install buster-backports repo
   apt_repository:
@@ -12,6 +26,7 @@
     pkg:
       - wireguard
       - qrencode
+      - iptables-persistent
       - netfilter-persistent # Debian >10 uses netfilter with the iptables-nf translation layer
       - unbound
     state: present
@@ -60,6 +75,38 @@
   ansible.builtin.slurp:
     src: "{{ wg_conf_dir.path }}/server_privkey"
   register: server_privkey
+
+- name: allow traffic from clients to the internet
+  ansible.builtin.iptables:
+    chain: FORWARD
+    source: "{{ wg_subnet.network }}{{ wg_subnet.cidr }}"
+    jump: ACCEPT
+    action: insert
+    comment: "Allow forwarding from WG clients to internet"
+  #notify: "save iptables"
+ 
+- name: Perform NAT readdressing - iptables
+  iptables:
+    table: nat
+    chain: POSTROUTING
+    source: "{{ wg_subnet.network }}{{ wg_subnet.cidr }}"
+    to_source: "{{ ansible_default_ipv4.address }}"
+    jump: SNAT
+    action: insert
+    comment: "WG client NAT readdressing"
+  when: not wg_masquerade_not_snat
+  #notify: "save iptables"
+
+- name: Perform NAT readdressing with MASQUERADE - iptables
+  iptables:
+    table: nat
+    chain: POSTROUTING
+    source: "{{ openvpn_server_network }}/24"
+    jump: MASQUERADE
+    action: insert
+    comment: "WG client NAT readdressing"
+  when: wg_masquerade_not_snat
+  #notify: "save iptables"
 
 - name: block traffic between clients by default
   ansible.builtin.iptables:
